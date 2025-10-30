@@ -1,7 +1,12 @@
 /******************************************************
  * Structural Inequality Experiment (jsPsych Version)
- * Converted from PsychoPy code
  ******************************************************/
+
+const jsPsych = initJsPsych({
+  on_finish: function() {
+    jsPsych.data.displayData();
+  }
+});
 
 // --- Experiment Info ---
 const expInfo = {
@@ -13,55 +18,86 @@ const expInfo = {
 // --- Initialize Timeline ---
 const timeline = [];
 
-// --- Outcome Text ---
-const outcomeText = {
+// --- Welcome Screen ---
+const welcome = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: `
-    <div style="font-family:'Open Sans'; color:white; font-size:28px; position:absolute; top:30%; left:13%;">
-      The outcome is:
-      <span id="yData" style="color:rgb(255,75,0); margin-left:20px;"></span>
+    <div style="font-size:26px; text-align:center;">
+      <p>Welcome to the experiment!</p>
+      <p>In this study, you will be asked to make predictions and respond to prompts.</p>
+      <p>Press <b>Space</b> to begin.</p>
     </div>
   `,
-  choices: "NO_KEYS",
-  trial_duration: 1000 // show for 1 second
+  choices: [' ']
 };
+timeline.push(welcome);
 
-// --- Inference Text (Prompt) ---
-const inferenceTrial = {
-  type: jsPsychSurveyText,
-  questions: [
-    {
-      prompt: `
-        <div style="font-family:'Open Sans'; color:white; font-size:22px;">
-          What is the <b>ALPHA</b> you predict?<br>
-          (Please put a number in the textbox;<br>
-          Press "return" key to continue;<br>
-          Do NOT edit after entering "return".)
-        </div>
-      `,
-      placeholder: "[Type here]",
-      name: "alphaPrediction",
-      required: true
+// --- Function to Create a Trial Block (Outcome + Prediction) ---
+function createTrial(outcomeValue) {
+  const combinedTrial = {
+    type: jsPsychSurveyHtmlForm,
+    preamble: `
+      <div style="font-size:26px; text-align:center; margin-bottom:20px;">
+        The outcome is: <span style="color:rgb(255,75,0);">${outcomeValue}</span>
+      </div>
+      <div style="font-size:22px;">
+        What is the <b>ALPHA</b> you predict?<br>
+        (Please enter a number below.)
+      </div>
+    `,
+    html: `
+      <input name="alphaPrediction" type="number" step="any" required placeholder="Enter a number" style="margin-top:10px;">
+    `,
+    button_label: "Continue",
+    on_finish: function(data) {
+      const response = data.response.alphaPrediction;
+      jsPsych.data.addProperties({
+        outcome: outcomeValue,
+        alphaPrediction: response
+      });
     }
-  ],
-  button_label: "Continue"
-};
+  };
 
-// --- Continue Prompt (Equivalent to inferStop) ---
-const continueTrial = {
+  timeline.push(combinedTrial);
+}
+
+// --- Create Multiple Trials ---
+const outcomes = [42, 58, 73]; // you can add more outcomes here
+outcomes.forEach(createTrial);
+
+// --- Instruction Routine (with Escape handling) ---
+const instructionL = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: `
-    <div style="font-family:'Open Sans'; color:white; font-size:24px;">
-      Press <b>Return</b> to continue.
+    <div style="font-size:24px; text-align:center;">
+      <p>[Insert your instruction text here]</p>
+      <p>Press "N" to continue or "Escape" to quit.</p>
     </div>
   `,
-  choices: ["Enter"]
+  choices: ['n', 'escape'],
+  on_finish: function(data) {
+    if (data.response === 'escape') {
+      jsPsych.endExperiment('Experiment terminated early by user.');
+    }
+  }
 };
+timeline.push(instructionL);
 
-// --- Add Trials to Timeline ---
-timeline.push(outcomeText);
-timeline.push(inferenceTrial);
-timeline.push(continueTrial);
+// --- Thanks Routine ---
+const thanks = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `
+    <div style="font-size:24px; text-align:center;">
+      <p>Thank you for your participation!</p>
+      <p>Press "Enter" to quit.</p>
+    </div>
+  `,
+  choices: ['Enter'],
+  on_finish: function() {
+    jsPsych.endExperiment();
+  }
+};
+timeline.push(thanks);
 
 // --- Start Experiment ---
 jsPsych.run(timeline);
